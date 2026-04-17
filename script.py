@@ -78,6 +78,11 @@ if __name__ == "__main__":
     sist = hent_sist()
 
     nye = hent(sist)
+
+    with open("resultat.txt", "w") as f:
+        for x in nye:
+            f.write(x["navn"] + "\n")
+
     send(nye)
 
     lagre(now)
