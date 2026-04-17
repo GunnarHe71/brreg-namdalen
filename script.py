@@ -67,10 +67,10 @@ def send(liste):
     msg["From"] = EMAIL
     msg["To"] = EMAIL
 
-    with smtplib.SMTP("smtp.office365.com", 587) as s:
-        s.starttls()
-        s.login(EMAIL, PASSORD)
-        s.send_message(msg)
+    #with smtplib.SMTP("smtp.office365.com", 587) as s:
+    #    s.starttls()
+    #    s.login(EMAIL, PASSORD)
+    #    s.send_message(msg)
 
 
 if __name__ == "__main__":
