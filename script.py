@@ -60,7 +60,7 @@ def hent(sist):
 
 if __name__ == "__main__":
     now = datetime.now()
-    sist = now - timedelta(days=7)
+    sist = now - timedelta(days=30)
 
     nye = hent(sist)
 
@@ -69,5 +69,5 @@ if __name__ == "__main__":
         for x in nye:
             print(x["navn"], "-", x["dato"])
     else:
-        print("Ingen nye foretak siste 7 dager")
+        print("Ingen nye foretak siste 30 dager")
     print("------------------")
