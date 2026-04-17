@@ -30,33 +30,49 @@ def lagre(tid):
 
 
 def hent(sist):
-    page = 0
-    nye = []
+    liste = []
+    url = BASE_URL
+    params = {
+        "size": 100,
+        "sort": "registreringsdato,desc"
+    }
 
-    while True:
-        r = requests.get(f"{BASE_URL}?page={page}&size=100")
+    while url:
+        r = requests.get(url, params=params)
         data = r.json()
-        enheter = data.get("_embedded", {}).get("enheter", [])
 
-        if not enheter:
-            break
-
-        for e in enheter:
-            adr = e.get("forretningsadresse", {})
-            kommune = adr.get("kommunenavn", "").upper()
-            dato = e.get("registreringsdatoEnhetsregisteret")
-
-            if not dato or kommune not in NAMDAL_KOMMUNER:
+        for enhet in data["_embedded"]["enheter"]:
+            if enhet.get("forretningsadresse") is None:
                 continue
 
-            dato_dt = datetime.fromisoformat(dato)
+            kommune = enhet["forretningsadresse"].get("kommune", "").upper()
+            if kommune not in NAMDAL_KOMMUNER:
+                continue
 
-            if sist is None or dato_dt > sist:
-                nye.append(f"{dato} - {e['navn']} ({kommune})")
+            dato_str = enhet.get("registreringsdato")
+            if not dato_str:
+                continue
 
-        page += 1
+            dato = datetime.fromisoformat(dato_str.replace("Z", "+00:00"))
 
-    return nye
+            if dato > sist:
+                liste.append({
+                    "navn": enhet["navn"],
+                    "dato": dato_str
+                })
+            else:
+                # siden vi sorterer desc kan vi stoppe her
+                return liste
+
+        # paging
+        next_link = data["_links"].get("next", {}).get("href")
+        if next_link:
+            url = next_link
+            params = None  # viktig: ikke send params på neste kall
+        else:
+            url = None
+
+    return liste
 
 
 def send(liste):
