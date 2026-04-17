@@ -79,10 +79,13 @@ if __name__ == "__main__":
 
     nye = hent(sist)
 
-    with open("resultat.txt", "w") as f:
+    print("---- RESULTAT ----")
+    if nye:
         for x in nye:
-            f.write(x["navn"] + "\n")
+            print(x["navn"])
+    else:
+        print("Ingen nye foretak")
+    print("------------------")
 
     send(nye)
-
     lagre(now)
