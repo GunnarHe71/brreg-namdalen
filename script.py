@@ -1,5 +1,5 @@
 import requests
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 BASE_URL = "https://data.brreg.no/enhetsregisteret/api/enheter"
 
@@ -33,7 +33,8 @@ def hent(sist):
 
             dato = datetime.fromisoformat(dato_str.replace("Z", "+00:00"))
 
-            if dato < sist:
+            # ENESTE ENDRING:
+            if dato.replace(tzinfo=None) < sist:
                 return liste
 
             adr = enhet.get("forretningsadresse", {})
@@ -62,7 +63,7 @@ def hent(sist):
 
 
 if __name__ == "__main__":
-    now = datetime.now(timezone.utc)  # <-- eneste endring
+    now = datetime.now()
     sist = now - timedelta(days=30)
 
     nye = hent(sist)
