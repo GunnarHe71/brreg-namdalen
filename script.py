@@ -41,7 +41,7 @@ def hent(sist):
         r = requests.get(url, params=params)
         data = r.json()
 
-        for enhet in data["_embedded"]["enheter"]:
+        for enhet in data.get("_embedded", {}).get("enheter", []):
             if enhet.get("forretningsadresse") is None:
                 continue
 
@@ -65,7 +65,7 @@ def hent(sist):
                 return liste
 
         # paging
-        next_link = data["_links"].get("next", {}).get("href")
+        next_link = data.get("_links", {}).get("next", {}).get("href")
         if next_link:
             url = next_link
             params = None  # viktig: ikke send params på neste kall
