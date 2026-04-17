@@ -49,7 +49,6 @@ def hent(sist):
             if not dato:
                 continue
 
-            # stopp hvis vi er for langt tilbake (forutsetter sortert API)
             if dato < sist:
                 return liste
 
@@ -68,11 +67,10 @@ def hent(sist):
                 "kommune": kommune
             })
 
-        # paginering
         next_link = data.get("_links", {}).get("next", {}).get("href")
         if next_link:
             url = next_link
-            params = None  # viktig: ikke sende params igjen
+            params = None
         else:
             url = None
 
@@ -85,7 +83,6 @@ def main():
 
     nye = hent(sist)
 
-    # eksplisitt og korrekt sortering
     nye.sort(key=lambda x: (x["kommune"], -x["dato"].timestamp()))
 
     print("---- NYE FORETAK (30 DAGER) ----")
@@ -109,3 +106,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
