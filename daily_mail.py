@@ -1,7 +1,4 @@
 import requests
-import os
-import smtplib
-from email.mime.text import MIMEText
 from datetime import datetime, timedelta
 
 BASE_URL = "https://data.brreg.no/enhetsregisteret/api/enheter"
@@ -75,54 +72,29 @@ def hent(sist):
     return liste
 
 
-def lag_melding(nye):
-    if not nye:
-        return "Ingen nye foretak siste døgn."
-
-    nye.sort(key=lambda x: x["kommune"])
-
-    linjer = []
-    current_kommune = None
-
-    for x in nye:
-        if x["kommune"] != current_kommune:
-            current_kommune = x["kommune"]
-            linjer.append(f"\n{current_kommune}")
-
-        linjer.append(f"{x['dato']} | {x['navn']} ({x['orgnr']}) | {x['adresse']}")
-
-    return "\n".join(linjer)
-
-
-def send_epost(innhold):
-    SMTP_SERVER = "smtp.office365.com"
-    SMTP_PORT = 587
-
-    SMTP_USER = os.environ.get("EMAIL_USER")
-    SMTP_PASS = os.environ.get("EMAIL_PASS")
-
-    msg = MIMEText(innhold)
-    msg["Subject"] = "Nye foretak siste døgn (Namdalen)"
-    msg["From"] = SMTP_USER
-    msg["To"] = "gunnarhemming@hotmail.com"
-
-    with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASS)
-        server.send_message(msg)
-
-
 def main():
     now = datetime.now()
     sist = now - timedelta(days=1)
 
     nye = hent(sist)
-    melding = lag_melding(nye)
 
-    send_epost(melding)
-    print(melding)
+    nye.sort(key=lambda x: x["kommune"])
+
+    print("---- NYE FORETAK (SISTE DØGN) ----")
+
+    if nye:
+        current_kommune = None
+        for x in nye:
+            if x["kommune"] != current_kommune:
+                current_kommune = x["kommune"]
+                print(f"\n{current_kommune}")
+
+            print(f"{x['dato']} | {x['navn']} ({x['orgnr']}) | {x['adresse']}")
+    else:
+        print("Ingen nye foretak siste døgn")
+
+    print("---------------------------------")
 
 
 if __name__ == "__main__":
     main()
-    
