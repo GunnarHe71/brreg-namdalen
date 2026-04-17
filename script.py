@@ -75,7 +75,9 @@ def send(liste):
 
 if __name__ == "__main__":
     now = datetime.now()
-    sist = hent_sist()
+
+    from datetime import timedelta
+    sist = datetime.now() - timedelta(days=7)
 
     nye = hent(sist)
 
@@ -88,4 +90,3 @@ if __name__ == "__main__":
     print("------------------")
 
     send(nye)
-    lagre(now)
