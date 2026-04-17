@@ -73,11 +73,11 @@ def send(liste):
     #    s.send_message(msg)
 
 
+from datetime import timedelta
+
 if __name__ == "__main__":
     now = datetime.now()
-
-    from datetime import timedelta
-    sist = datetime.now() - timedelta(days=7)
+    sist = now - timedelta(days=7)
 
     nye = hent(sist)
 
@@ -88,5 +88,3 @@ if __name__ == "__main__":
     else:
         print("Ingen nye foretak")
     print("------------------")
-
-    send(nye)
