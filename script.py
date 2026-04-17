@@ -3,10 +3,10 @@ from datetime import datetime, timedelta
 
 BASE_URL = "https://data.brreg.no/enhetsregisteret/api/enheter"
 
-NAMDAL_KOMMUNER = {
+NAMDAL_KOMMUNER = [
     "NAMSOS", "NAMSSKOGAN", "GRONG", "HØYLANDET",
     "OVERHALLA", "FLATANGER", "LIERNE", "RØYRVIK", "NÆRØYSUND"
-}
+]
 
 def hent():
     grense = datetime.now() - timedelta(days=30)
@@ -34,7 +34,7 @@ def hent():
 
             dato = datetime.fromisoformat(dato_str.replace("Z", "+00:00"))
 
-            # stopp når vi er utenfor 30 dager
+            # stopp når vi er eldre enn 30 dager
             if dato < grense:
                 return resultater
 
@@ -42,17 +42,21 @@ def hent():
             if not adr:
                 continue
 
-            kommune = adr.get("kommune", "").upper()
-            if kommune not in NAMDAL_KOMMUNER:
+            kommune_raw = adr.get("kommune", "")
+            kommune = kommune_raw.upper()
+
+            # robust matching (tåler "Namsos kommune" osv.)
+            if not any(k in kommune for k in NAMDAL_KOMMUNER):
                 continue
 
-            adresse = adr.get("adresse", [""])[0]
+            adresse_liste = adr.get("adresse", [])
+            adresse = adresse_liste[0] if adresse_liste else ""
 
             resultater.append({
-                "navn": e.get("navn"),
                 "dato": dato_str[:10],
+                "navn": e.get("navn", ""),
                 "adresse": adresse,
-                "kommune": kommune
+                "kommune": kommune_raw
             })
 
         # paging
