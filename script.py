@@ -3,90 +3,86 @@ from datetime import datetime, timedelta
 
 BASE_URL = "https://data.brreg.no/enhetsregisteret/api/enheter"
 
-NAMDAL_KOMMUNER = [
+NAMDAL_KOMMUNER = {
     "NAMSOS", "NAMSSKOGAN", "GRONG", "HØYLANDET",
-    "OVERHALLA", "FLATANGER", "LIERNE", "RØYRVIK", "NÆRØYSUND"
-]
+    "OVERHALLA", "FLATANGER", "LIERNE", "RØYRVIK",
+    "NÆRØYSUND"
+}
 
-def parse_dato(e):
-    # prøv riktige felt i prioritert rekkefølge
-    for felt in [
-        "registreringsdatoEnhetsregisteret",
-        "stiftelsesdato",
-        "registreringsdato"
-    ]:
-        d = e.get(felt)
-        if d:
-            try:
-                return datetime.fromisoformat(d.replace("Z", "+00:00"))
-            except:
-                pass
-    return None
-
-
-def hent():
-    grense = datetime.now() - timedelta(days=30)
-
+def hent(sist):
+    liste = []
     url = BASE_URL
     params = {
         "size": 100,
         "sort": "registreringsdatoEnhetsregisteret,desc"
     }
 
-    resultater = []
-
     while url:
         r = requests.get(url, params=params)
         data = r.json()
 
-        enheter = data.get("_embedded", {}).get("enheter", [])
-        if not enheter:
+        if "_embedded" not in data:
+            print("DEBUG:", data)
             break
 
-        for e in enheter:
-            dato = parse_dato(e)
-            if not dato:
+        for enhet in data["_embedded"]["enheter"]:
+
+            dato_str = enhet.get("registreringsdatoEnhetsregisteret")
+            if not dato_str:
                 continue
 
-            # stopp når vi går for langt tilbake
-            if dato < grense:
-                return resultater
+            dato = datetime.fromisoformat(dato_str.replace("Z", "+00:00"))
 
-            adr = e.get("forretningsadresse") or e.get("postadresse")
-            if not adr:
+            if dato < sist:
+                return liste
+
+            adr = enhet.get("forretningsadresse", {})
+            kommune = adr.get("kommune", "").upper()
+
+            if kommune not in NAMDAL_KOMMUNER:
                 continue
 
-            kommune_raw = adr.get("kommune", "")
-            kommune = kommune_raw.upper()
+            adresse = " ".join(adr.get("adresse", [])) if adr else "Ukjent"
 
-            if not any(k in kommune for k in NAMDAL_KOMMUNER):
-                continue
-
-            adresse = ""
-            if adr.get("adresse"):
-                adresse = adr["adresse"][0]
-
-            resultater.append({
-                "dato": dato.strftime("%Y-%m-%d"),
-                "navn": e.get("navn", ""),
+            liste.append({
+                "navn": enhet.get("navn"),
+                "dato": dato_str,
                 "adresse": adresse,
-                "kommune": kommune_raw
+                "kommune": kommune
             })
 
-        url = data.get("_links", {}).get("next", {}).get("href")
-        params = None
+        next_link = data["_links"].get("next", {}).get("href")
+        if next_link:
+            url = next_link
+            params = None
+        else:
+            url = None
 
-    return resultater
+    return liste
 
 
 if __name__ == "__main__":
-    nye = hent()
+    now = datetime.now()
+    sist = now - timedelta(days=30)
+
+    nye = hent(sist)
+
+    # sorter først på dato (nyeste først)
+    nye.sort(key=lambda x: x["dato"], reverse=True)
+
+    # deretter på kommune (A–Å)
+    nye.sort(key=lambda x: x["kommune"])
 
     print("---- NYE FORETAK (30 DAGER) ----")
 
     if nye:
-        for e in nye:
-            print(f"{e['dato']} | {e['navn']} | {e['adresse']} | {e['kommune']}")
+        current_kommune = None
+        for x in nye:
+            if x["kommune"] != current_kommune:
+                current_kommune = x["kommune"]
+                print(f"\n{current_kommune}")
+
+            print(f"{x['dato']} | {x['navn']} | {x['adresse']}")
     else:
         print("Ingen nye foretak funnet")
 
