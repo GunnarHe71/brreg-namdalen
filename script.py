@@ -8,13 +8,29 @@ NAMDAL_KOMMUNER = [
     "OVERHALLA", "FLATANGER", "LIERNE", "RØYRVIK", "NÆRØYSUND"
 ]
 
+def parse_dato(e):
+    # prøv riktige felt i prioritert rekkefølge
+    for felt in [
+        "registreringsdatoEnhetsregisteret",
+        "stiftelsesdato",
+        "registreringsdato"
+    ]:
+        d = e.get(felt)
+        if d:
+            try:
+                return datetime.fromisoformat(d.replace("Z", "+00:00"))
+            except:
+                pass
+    return None
+
+
 def hent():
     grense = datetime.now() - timedelta(days=30)
 
     url = BASE_URL
     params = {
         "size": 100,
-        "sort": "registreringsdato,desc"
+        "sort": "registreringsdatoEnhetsregisteret,desc"
     }
 
     resultater = []
@@ -28,13 +44,11 @@ def hent():
             break
 
         for e in enheter:
-            dato_str = e.get("registreringsdato")
-            if not dato_str:
+            dato = parse_dato(e)
+            if not dato:
                 continue
 
-            dato = datetime.fromisoformat(dato_str.replace("Z", "+00:00"))
-
-            # stopp når vi er eldre enn 30 dager
+            # stopp når vi går for langt tilbake
             if dato < grense:
                 return resultater
 
@@ -45,21 +59,20 @@ def hent():
             kommune_raw = adr.get("kommune", "")
             kommune = kommune_raw.upper()
 
-            # robust matching (tåler "Namsos kommune" osv.)
             if not any(k in kommune for k in NAMDAL_KOMMUNER):
                 continue
 
-            adresse_liste = adr.get("adresse", [])
-            adresse = adresse_liste[0] if adresse_liste else ""
+            adresse = ""
+            if adr.get("adresse"):
+                adresse = adr["adresse"][0]
 
             resultater.append({
-                "dato": dato_str[:10],
+                "dato": dato.strftime("%Y-%m-%d"),
                 "navn": e.get("navn", ""),
                 "adresse": adresse,
                 "kommune": kommune_raw
             })
 
-        # paging
         url = data.get("_links", {}).get("next", {}).get("href")
         params = None
 
@@ -77,4 +90,5 @@ if __name__ == "__main__":
     else:
         print("Ingen nye foretak funnet")
 
-    print("--------------------------------")
+    print("--------------------------------")Husker akta
+a
