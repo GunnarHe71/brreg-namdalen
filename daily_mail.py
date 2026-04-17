@@ -95,7 +95,7 @@ def lag_melding(nye):
 
 
 def send_epost(innhold):
-    SMTP_SERVER = "smtp.gmail.com"
+    SMTP_SERVER = "smtp.office365.com"
     SMTP_PORT = 587
 
     SMTP_USER = os.environ.get("EMAIL_USER")
@@ -125,3 +125,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
