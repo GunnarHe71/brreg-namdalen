@@ -1,35 +1,45 @@
 import requests
 from datetime import datetime, timedelta
 
-URL = "https://data.brreg.no/enhetsregisteret/api/oppdateringer/enheter"
+BASE_URL = "https://data.brreg.no/enhetsregisteret/api/enheter"
+
+NAMDAL_KOMMUNER = {
+    "NAMSOS", "NAMSSKOGAN", "GRONG", "HØYLANDET",
+    "OVERHALLA", "FLATANGER", "LIERNE", "RØYRVIK", "NÆRØYSUND"
+}
 
 def hent():
-    r = requests.get(URL + "?size=50")
+    fra_dato = (datetime.now() - timedelta(days=30)).date().isoformat()
+
+    params = {
+        "registreringsdatoFra": fra_dato,
+        "size": 100
+    }
+
+    r = requests.get(BASE_URL, params=params)
     data = r.json()
-    return data.get("_embedded", {}).get("oppdaterteEnheter", [])
+
+    liste = []
+
+    for enhet in data.get("_embedded", {}).get("enheter", []):
+        adr = enhet.get("forretningsadresse")
+        if not adr:
+            continue
+
+        kommune = adr.get("kommune", "").upper()
+        if kommune in NAMDAL_KOMMUNER:
+            liste.append(enhet["navn"])
+
+    return liste
 
 
 if __name__ == "__main__":
-    now = datetime.now()
-    grense = now - timedelta(days=30)
+    nye = hent()
 
-    enheter = hent()
-
-    print("---- SISTE ENDRINGER ----")
-
-    treff = 0
-    for e in enheter:
-        dato_str = e.get("oppdateringsdato")
-        if not dato_str:
-            continue
-
-        dato = datetime.fromisoformat(dato_str.replace("Z", "+00:00"))
-
-        if dato > grense:
-            print(e.get("navn"), "-", dato_str)
-            treff += 1
-
-    if treff == 0:
-        print("Ingen funnet (uvanlig)")
-
-    print("-------------------------")
+    print("---- RESULTAT ----")
+    if nye:
+        for navn in nye:
+            print(navn)
+    else:
+        print("Ingen nye foretak siste 30 dager")
+    print("------------------")
