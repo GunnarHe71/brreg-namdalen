@@ -1,32 +1,12 @@
 import requests
-from datetime import datetime
-import json
-import os
-import smtplib
-from email.mime.text import MIMEText
+from datetime import datetime, timedelta
 
 BASE_URL = "https://data.brreg.no/enhetsregisteret/api/enheter"
-STATE_FILE = "state.json"
 
 NAMDAL_KOMMUNER = {
-    "NAMSOS","NAMSSKOGAN","GRONG","HØYLANDET",
-    "OVERHALLA","FLATANGER","LIERNE","RØYRVIK","NÆRØYSUND"
+    "NAMSOS", "NAMSSKOGAN", "GRONG", "HØYLANDET",
+    "OVERHALLA", "FLATANGER", "LIERNE", "RØYRVIK", "NÆRØYSUND"
 }
-
-EMAIL = "gunnarhemming@hotmail.com"
-PASSORD = os.environ["EMAIL_PASS"]
-
-
-def hent_sist():
-    if not os.path.exists(STATE_FILE):
-        return None
-    with open(STATE_FILE) as f:
-        return datetime.fromisoformat(json.load(f)["last"])
-
-
-def lagre(tid):
-    with open(STATE_FILE, "w") as f:
-        json.dump({"last": tid.isoformat()}, f)
 
 
 def hent(sist):
@@ -41,11 +21,16 @@ def hent(sist):
         r = requests.get(url, params=params)
         data = r.json()
 
-        for enhet in data.get("_embedded", {}).get("enheter", []):
-            if enhet.get("forretningsadresse") is None:
+        enheter = data.get("_embedded", {}).get("enheter", [])
+        if not enheter:
+            break
+
+        for enhet in enheter:
+            adresse = enhet.get("forretningsadresse") or enhet.get("postadresse")
+            if not adresse:
                 continue
 
-            kommune = enhet["forretningsadresse"].get("kommune", "").upper()
+            kommune = adresse.get("kommune", "").upper()
             if kommune not in NAMDAL_KOMMUNER:
                 continue
 
@@ -61,35 +46,17 @@ def hent(sist):
                     "dato": dato_str
                 })
             else:
-                # siden vi sorterer desc kan vi stoppe her
                 return liste
 
-        # paging
         next_link = data.get("_links", {}).get("next", {}).get("href")
         if next_link:
             url = next_link
-            params = None  # viktig: ikke send params på neste kall
+            params = None
         else:
             url = None
 
     return liste
 
-
-def send(liste):
-    tekst = "\n".join(liste) if liste else "Ingen nye foretak"
-
-    msg = MIMEText(tekst)
-    msg["Subject"] = "Nye foretak Namdalen"
-    msg["From"] = EMAIL
-    msg["To"] = EMAIL
-
-    #with smtplib.SMTP("smtp.office365.com", 587) as s:
-    #    s.starttls()
-    #    s.login(EMAIL, PASSORD)
-    #    s.send_message(msg)
-
-
-from datetime import timedelta
 
 if __name__ == "__main__":
     now = datetime.now()
@@ -100,7 +67,7 @@ if __name__ == "__main__":
     print("---- RESULTAT ----")
     if nye:
         for x in nye:
-            print(x["navn"])
+            print(x["navn"], "-", x["dato"])
     else:
-        print("Ingen nye foretak")
+        print("Ingen nye foretak siste 7 dager")
     print("------------------")
