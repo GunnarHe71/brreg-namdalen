@@ -90,5 +90,4 @@ if __name__ == "__main__":
     else:
         print("Ingen nye foretak funnet")
 
-    print("--------------------------------")Husker akta
-a
+    print("--------------------------------")
