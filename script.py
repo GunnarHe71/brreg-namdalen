@@ -11,6 +11,7 @@ NAMDAL_KOMMUNER = {
 
 def hent(sist):
     liste = []
+    sett = set()
     url = BASE_URL
     params = {
         "size": 100,
@@ -27,13 +28,17 @@ def hent(sist):
 
         for enhet in data["_embedded"]["enheter"]:
 
+            orgnr = enhet.get("organisasjonsnummer")
+            if not orgnr or orgnr in sett:
+                continue
+            sett.add(orgnr)
+
             dato_str = enhet.get("registreringsdatoEnhetsregisteret")
             if not dato_str:
                 continue
 
             dato = datetime.fromisoformat(dato_str.replace("Z", "+00:00"))
 
-            # ENESTE ENDRING:
             if dato.replace(tzinfo=None) < sist:
                 return liste
 
@@ -43,7 +48,11 @@ def hent(sist):
             if kommune not in NAMDAL_KOMMUNER:
                 continue
 
-            adresse = " ".join(adr.get("adresse", [])) if adr else "Ukjent"
+            adresse_linje = " ".join(adr.get("adresse", []))
+            postnr = adr.get("postnummer", "")
+            poststed = adr.get("poststed", "")
+
+            adresse = f"{adresse_linje}, {postnr} {poststed}".strip(", ")
 
             liste.append({
                 "navn": enhet.get("navn"),
