@@ -56,6 +56,7 @@ def hent(sist):
 
             liste.append({
                 "navn": enhet.get("navn"),
+                "orgnr": orgnr,
                 "dato": dato_str,
                 "adresse": adresse,
                 "kommune": kommune
@@ -89,7 +90,7 @@ if __name__ == "__main__":
                 current_kommune = x["kommune"]
                 print(f"\n{current_kommune}")
 
-            print(f"{x['dato']} | {x['navn']} | {x['adresse']}")
+            print(f"{x['dato']} | {x['navn']} ({x['orgnr']}) | {x['adresse']}")
     else:
         print("Ingen nye foretak funnet")
 
